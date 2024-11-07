@@ -1,3 +1,0 @@
-# gps-orbital-propagator
-
-test
