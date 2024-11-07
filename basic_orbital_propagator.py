@@ -1,4 +1,6 @@
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
 import copy
 
@@ -50,24 +52,193 @@ def get_plane_coordinates(semi_major_axis, mean_motion, mean_ecentricity, initia
     y = orbital_radius * np.sin(true_anomaly)
     return x, y
 
+
+def get_ECEF_coordinates(x, y, semi_major_axis, inclination, raan, arg_periapsis, time):
+    orbital_radius = np.sqrt(x**2 + y**2)
+
+    pos_orbit = np.array([x, y, np.zeros_like(x)])  # 2D to 3D orbital coordinates
+
+    R_periapsis = np.array([
+        [np.cos(arg_periapsis), -np.sin(arg_periapsis), 0],
+        [np.sin(arg_periapsis), np.cos(arg_periapsis), 0],
+        [0, 0, 1]
+    ])
+    
+    R_inclination = np.array([
+        [1, 0, 0],
+        [0, np.cos(inclination), -np.sin(inclination)],
+        [0, np.sin(inclination), np.cos(inclination)]
+    ])
+    
+    R_raan = np.array([
+        [np.cos(raan), -np.sin(raan), 0],
+        [np.sin(raan), np.cos(raan), 0],
+        [0, 0, 1]
+    ])
+
+    # Full rotation from orbital plane to ECI
+    rotation_matrix = R_raan @ R_inclination @ R_periapsis
+    pos_eci = rotation_matrix @ pos_orbit
+
+    # Earth's rotation rate in rad/s
+    earth_rotation_rate = 7.2921159e-5
+
+    # Convert from ECI to ECEF
+    theta = earth_rotation_rate * time  # Earth's rotation angle
+    ecef_positions = []
+    for i, t in enumerate(time):
+        R_earth_rotation = np.array([
+            [np.cos(theta[i]), -np.sin(theta[i]), 0],
+            [np.sin(theta[i]), np.cos(theta[i]), 0],
+            [0, 0, 1]
+        ])
+        ecef_positions.append(R_earth_rotation @ pos_eci[:, i])
+
+    return np.array(ecef_positions).T  # Transpose for consistency
+
+
+
+def plot_ECEF_coordinates(ecef_coords):
+    # Earth's radius in meters
+    earth_radius = 6378137/1000
+
+    # Create a 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Plot satellite ECEF coordinates
+    ax.plot(ecef_coords[0], ecef_coords[1], ecef_coords[2], label="Satellite Trajectory", color='blue')
+
+    # Create a sphere to represent Earth
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 50)
+    x_sphere = earth_radius * np.outer(np.cos(u), np.sin(v))
+    y_sphere = earth_radius * np.outer(np.sin(u), np.sin(v))
+    z_sphere = earth_radius * np.outer(np.ones(np.size(u)), np.cos(v))
+
+    # Plot the Earth sphere
+    ax.plot_wireframe(x_sphere, y_sphere, z_sphere, color='green', alpha=0.5, linewidth=0.5)
+
+    # Labels and title
+    ax.set_xlabel("X (meters)")
+    ax.set_ylabel("Y (meters)")
+    ax.set_zlabel("Z (meters)")
+    ax.set_title("Satellite Trajectory in ECEF Coordinates with Earth Reference Sphere")
+    plt.legend()
+    plt.show()
+
+
+
+# Plot ECEF coordinates with Earth reference sphere
+def plot_ECEF_coordinates_with_GPS(ecef_coords, gps_data):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Plot the satellite ECEF coordinates
+    ax.plot(ecef_coords[0] / 1000, ecef_coords[1] / 1000, ecef_coords[2] / 1000, label="Satellite Trajectory", color='blue')
+
+    # Create a sphere to represent Earth
+    u = np.linspace(0, 2 * np.pi, 100)
+    v = np.linspace(0, np.pi, 50)
+    x_sphere = EARTH_RADIUS * np.outer(np.cos(u), np.sin(v))
+    y_sphere = EARTH_RADIUS * np.outer(np.sin(u), np.sin(v))
+    z_sphere = EARTH_RADIUS * np.outer(np.ones(np.size(u)), np.cos(v))
+
+    # Plot the Earth sphere
+    ax.plot_wireframe(x_sphere, y_sphere, z_sphere, color='green', alpha=0.5, linewidth=0.5)
+
+    # Plot the GPS data points on top in red
+    ax.scatter(gps_data['X_normalized'], gps_data['Y_normalized'], gps_data['Z_normalized'], color='red', s=10, label="GPS Data Points")
+
+    # Labels and title
+    ax.set_xlabel("X (km)")
+    ax.set_ylabel("Y (km)")
+    ax.set_zlabel("Z (km)")
+    ax.set_title("Satellite Trajectory with GPS Data Points")
+    plt.legend()
+    plt.show()
+
+
+
+def plot_partial_ECEF_coordinates_with_filtered_GPS(ecef_coords, gps_data):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Earth's radius in kilometers
+    earth_radius = 6378137 / 1000
+
+    # Generate partial sphere (1/8 of the sphere) coordinates
+    u = np.linspace(0, np.pi / 2, 50)    # Only the northern quarter
+    v = np.linspace(0, np.pi / 2, 25)    # Only one-eighth section
+    
+    x_sphere = earth_radius * np.outer(np.cos(u), np.sin(v))
+    y_sphere = earth_radius * np.outer(np.sin(u), np.sin(v))
+    z_sphere = earth_radius * np.outer(np.ones(np.size(u)), np.cos(v))
+
+    # Plot the partial Earth sphere
+    ax.plot_wireframe(x_sphere, y_sphere, z_sphere, color='green', alpha=0.5, linewidth=0.5)
+
+    # Filter ECEF satellite coordinates for points in the positive X, Y, Z octant
+    filtered_ecef_coords = ecef_coords[:, (ecef_coords[0] > 0) & (ecef_coords[1] > 0) & (ecef_coords[2] > 0)]
+    
+    # Plot the filtered satellite ECEF coordinates
+    ax.plot(filtered_ecef_coords[0] / 1000, filtered_ecef_coords[1] / 1000, filtered_ecef_coords[2] / 1000, label="Filtered Satellite Trajectory", color='blue')
+
+    # Filter GPS data for points in the positive X, Y, Z octant
+    filtered_gps_data = gps_data[(gps_data['X_normalized'] > 0) & (gps_data['Y_normalized'] > 0) & (gps_data['Z_normalized'] > 0)]
+    
+    # Plot the filtered GPS data points in red
+    ax.scatter(filtered_gps_data['X_normalized'], filtered_gps_data['Y_normalized'], filtered_gps_data['Z_normalized'], color='red', s=10, label="Filtered GPS Data Points")
+
+    # Labels and title
+    ax.set_xlabel("X (km)")
+    ax.set_ylabel("Y (km)")
+    ax.set_zlabel("Z (km)")
+    ax.set_title("Filtered Partial Earth (1/8 Sphere) with Satellite and GPS Data")
+    plt.legend()
+    plt.show()
+
+
+
+
 if __name__ == '__main__':
-    mu = 6378137
-    mean_motion = 16.47925117*2*np.pi/86400 #revolutions per/day --> rad/sec
+    mu = 3.986004418e14
+    mean_motion = 16.47925117 * 2 * np.pi / 86400  # rad/sec
     mean_ecentricity = 0.0010327 
     initial_mean_anomaly = 0
     semi_major_axis = (mean_motion**(-2) * mu)**(1/3)
     time = np.arange(0, 86400, 60)
     x, y = get_plane_coordinates(semi_major_axis, mean_motion, mean_ecentricity, initial_mean_anomaly, time)
-    # plot the orbit
+
+    # Load GPS data
+    file_path = "gmat_gps.gmd"  # Path to your .gmd file
+    columns = ['Timestamp', 'MeasurementType', 'SatelliteID', 'AdditionalID', 'X', 'Y', 'Z']
+    df = pd.read_csv(file_path, sep='\s+', names=columns)
+
+    # Define normalization to Earth's surface function if needed (e.g., for better visualization)
+    EARTH_RADIUS = 6378137 / 1000  # Convert to kilometers
+
+    # Normalize GPS data points to Earth's surface radius if necessary
+    df['X_normalized'], df['Y_normalized'], df['Z_normalized'] = df['X'], df['Y'], df['Z']
+
+    # Define orbital parameters
+    inclination = np.radians(97.3186)  # example inclination
+    raan = np.radians(168.2012)         # example RAAN
+    arg_periapsis = np.radians(211.2998) # example argument of periapsis
+
+
+    # Generate the ECEF coordinates using the provided function
+    ecef_coords = get_ECEF_coordinates(x, y, semi_major_axis, inclination, raan, arg_periapsis, time)
+
+    # plot in plane coordinates
     plt.plot(x, y)
     plt.show()
 
-    # plot radius
-    r = get_orbital_radius(semi_major_axis, mean_motion, mean_ecentricity, initial_mean_anomaly, time)
-    plt.plot(time, r)
-    plt.show()
+    # plot the ECEF coordinates
+    plot_ECEF_coordinates(ecef_coords)
 
-    # plot true anomaly
-    true_anomaly = get_true_anomaly(mean_motion, mean_ecentricity, initial_mean_anomaly, time)
-    plt.plot(time, true_anomaly)
-    plt.show()
+    # Plot the ECEF coordinates with GPS data points
+    plot_ECEF_coordinates_with_GPS(ecef_coords, df)
+
+    # Plot the partial ECEF coordinates with filtered GPS data points
+    plot_partial_ECEF_coordinates_with_filtered_GPS(ecef_coords, df)
