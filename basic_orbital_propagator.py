@@ -127,6 +127,14 @@ def plot_ECEF_coordinates(ecef_coords):
     plt.legend()
     plt.show()
 
+# Plot in-plane coordinates
+def plot_in_plane_coordinates(x, y):
+    plt.plot(x, y)
+    plt.xlabel("X (m)")
+    plt.ylabel("Y (m)")
+    plt.title("Satellite Trajectory in Orbital Plane")
+    plt.show()
+
 
 
 # Plot ECEF coordinates with Earth reference sphere
@@ -198,8 +206,15 @@ def plot_partial_ECEF_coordinates_with_filtered_GPS(ecef_coords, gps_data):
     plt.legend()
     plt.show()
 
-
-
+# Compute the average error between the GPS data and satellite trajectory in the z-coordinate
+def compute_average_error(ecef_coords, gps_data):
+    # Averge z-coord of the computed ECEF coordinates
+    avg_z = np.mean(ecef_coords[2])
+    # Average z-coord of the GPS data
+    avg_gps_z = np.mean(gps_data['Z_normalized'])
+    # Compute the average error
+    avg_error = np.abs(avg_z - avg_gps_z) / 1000  # Convert to kilometers
+    return avg_error
 
 if __name__ == '__main__':
     mu = 3.986004418e14
@@ -230,11 +245,10 @@ if __name__ == '__main__':
     # Generate the ECEF coordinates using the provided function
     ecef_coords = get_ECEF_coordinates(x, y, semi_major_axis, inclination, raan, arg_periapsis, time)
 
-    # plot in plane coordinates
-    plt.plot(x, y)
-    plt.show()
+    # Plot the in-plane coordinates
+    plot_in_plane_coordinates(x, y)
 
-    # plot the ECEF coordinates
+    # Plot the ECEF coordinates
     plot_ECEF_coordinates(ecef_coords)
 
     # Plot the ECEF coordinates with GPS data points
@@ -242,3 +256,14 @@ if __name__ == '__main__':
 
     # Plot the partial ECEF coordinates with filtered GPS data points
     plot_partial_ECEF_coordinates_with_filtered_GPS(ecef_coords, df)
+
+    # Compute the average error between the GPS data and satellite trajectory in the z-coordinate
+    avg_error = compute_average_error(ecef_coords, df)
+    print(f"Average error in the z-coordinate: {avg_error} km")
+
+    # plot z coordinate variation with time
+    plt.plot(time, ecef_coords[2])
+    plt.xlabel("Time (s)")
+    plt.ylabel("Z Coordinate (m)")
+    plt.title("Z Coordinate Variation with Time")
+    plt.show()
