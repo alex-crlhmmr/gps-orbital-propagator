@@ -4,8 +4,6 @@ import pandas as pd
 import numpy as np
 import copy
 
-
-
 def newton_raphson__eccentric_anomaly(mean_anomaly, eccentricity, tolerance, max_iter):
     
     # array operations
@@ -216,13 +214,42 @@ def compute_average_error(ecef_coords, gps_data):
     avg_error = np.abs(avg_z - avg_gps_z) / 1000  # Convert to kilometers
     return avg_error
 
+#Compute average altitude error between GPS data and satellite trajectory
+def compute_average_altitude_error(ecef_coords, gps_data):
+
+    gps_x = np.array(gps_data['X_normalized'])
+    gps_y = np.array(gps_data['Y_normalized'])
+    gps_z = np.array(gps_data['Z_normalized'])
+
+    gps_data_points = np.stack((gps_x, gps_y, gps_z))*1000
+
+    avg_alt = np.mean(np.linalg.norm(ecef_coords, axis=0))
+    avg_gps_alt = np.mean(np.linalg.norm(gps_data_points, axis=0))
+    
+    avg_error = np.abs(avg_alt - avg_gps_alt) /1000
+    return avg_error
+
 if __name__ == '__main__':
+
     mu = 3.986004418e14
+
+    #Original orbital parameters from data sheet
     mean_motion = 15.22972908 * 2 * np.pi / 86400  # rad/sec
     mean_ecentricity = 0.0013769 
     initial_mean_anomaly = 0
     semi_major_axis = (mean_motion**(-2) * mu)**(1/3)
     time = np.arange(0, 86400, 60)
+    inclination = np.radians(97.4085)
+    raan = np.radians(4.4766)
+    arg_periapsis = np.radians(207.9913)
+
+    #Calculated guesses of orbital parameters from GPS Data
+    # semi_major_axis = 7192188.005891686
+    # mean_ecentricity = 0.13426412998948875
+    # inclination = np.radians(103.60603181398038)
+    # raan = np.radians(-59.43694893107553)
+    # arg_periapsis = np.radians(94.65823728204472)
+
     x, y = get_plane_coordinates(semi_major_axis, mean_motion, mean_ecentricity, initial_mean_anomaly, time)
 
     # Load GPS data
@@ -236,17 +263,11 @@ if __name__ == '__main__':
     # Normalize GPS data points to Earth's surface radius if necessary
     df['X_normalized'], df['Y_normalized'], df['Z_normalized'] = df['X'], df['Y'], df['Z']
 
-    # Define orbital parameters
-    inclination = np.radians(97.4085)  # example inclination
-    raan = np.radians(4.4766)         # example RAAN
-    arg_periapsis = np.radians(207.9913) # example argument of periapsis
-
-
     # Generate the ECEF coordinates using the provided function
     ecef_coords = get_ECEF_coordinates(x, y, semi_major_axis, inclination, raan, arg_periapsis, time)
 
     # Plot the in-plane coordinates
-    plot_in_plane_coordinates(x, y)
+    #plot_in_plane_coordinates(x, y)
 
     # Plot the ECEF coordinates
     plot_ECEF_coordinates(ecef_coords)
@@ -261,9 +282,21 @@ if __name__ == '__main__':
     avg_error = compute_average_error(ecef_coords, df)
     print(f"Average error in the z-coordinate: {avg_error} km")
 
+    #Compute average altitude error, propogator vs GPS
+    avg_alt_error = compute_average_altitude_error(ecef_coords, df)
+    print(f"Average error in altitude: {avg_alt_error} km")
+
     # plot z coordinate variation with time
     plt.plot(time, ecef_coords[2])
     plt.xlabel("Time (s)")
     plt.ylabel("Z Coordinate (m)")
     plt.title("Z Coordinate Variation with Time")
+    plt.show()
+
+    #plot altitude with time
+    alt_data = np.linalg.norm(ecef_coords, axis=0)
+    plt.plot(time, alt_data)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Altitude (m)')
+    plt.title('Altitude vs Time')
     plt.show()
