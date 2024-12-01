@@ -103,7 +103,8 @@ def plot_orbital(orbital_data):
 
 if __name__ == '__main__':
     orbital_data = process_tle()
-    plot_orbital(orbital_data)  # Display the first few rows for verification
+    print(orbital_data)  # Display the first few rows for verification
+    # plot_orbital(orbital_data)  # Display the first few rows for verification
     
 
 
