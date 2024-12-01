@@ -236,9 +236,9 @@ if __name__ == '__main__':
     #Original orbital parameters from data sheet
     mean_motion = 15.22972908 * 2 * np.pi / 86400  # rad/sec
     mean_ecentricity = 0.0013769 
-    initial_mean_anomaly = 0
-    semi_major_axis = (mean_motion**(-2) * mu)**(1/3)
-    time = np.arange(0, 86400, 60)
+    initial_mean_anomaly = 0 
+    semi_major_axis = (mean_motion**(-2) * mu)**(1/3) 
+    time = np.arange(0, 9*86400, 60) # 1 day in seconds
     inclination = np.radians(97.4085)
     raan = np.radians(4.4766)
     arg_periapsis = np.radians(207.9913)

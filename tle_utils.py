@@ -17,9 +17,7 @@ def tle_epoch_to_datetime(epoch):
     return datetime(year, 1, 1) + timedelta(days=day_of_year - 1, hours=hour, minutes=minute, seconds=second)
 
 # Function to process the TLE file and extract orbital parameters
-def process_tle():
-    # Parse the new TLE file and extract orbital parameters
-    tle_path = 'tle.txt'
+def process_tle(tle_path):
     # Read the TLE file
     with open(tle_path, 'r') as file:
         tle_lines = file.read().splitlines()
@@ -102,9 +100,9 @@ def plot_orbital(orbital_data):
 
 
 if __name__ == '__main__':
-    orbital_data = process_tle()
+    orbital_data = process_tle('tle.txt')
     print(orbital_data)  # Display the first few rows for verification
-    # plot_orbital(orbital_data)  # Display the first few rows for verification
+    plot_orbital(orbital_data)  # Display the first few rows for verification
     
 
 
