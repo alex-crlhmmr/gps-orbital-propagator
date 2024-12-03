@@ -63,8 +63,42 @@ day_max_chunk_with_points = find_day_max_chunk_with_points(df)
 
 
 
-# Final function to find the two nearest points based on consecutive proximity
-def find_two_nearest_points(day_max_chunk_with_points):
+# # Final function to find the two nearest points based on consecutive proximity
+# def find_two_nearest_points(day_max_chunk_with_points):
+#     day_two_nearest = {}
+#     for day, points in day_max_chunk_with_points.items():
+#         if len(points) < 2:
+#             # If fewer than 2 points, skip the day
+#             continue
+#         min_distance = float('inf')
+#         nearest_pair = []
+#         # Iterate through points to find the two closest
+#         for i in range(len(points) - 1):
+#             p1 = points[i]
+#             p2 = points[i + 1]
+#             # Compute Euclidean distance
+#             distance = sum((a - b) ** 2 for a, b in zip(p1, p2)) ** 0.5
+#             if distance < min_distance:
+#                 min_distance = distance
+#                 nearest_pair = [p1, p2]
+#         day_two_nearest[day] = nearest_pair
+#     return day_two_nearest
+
+# # Test the function on the example dataset
+# day_two_nearest = find_two_nearest_points(day_max_chunk_with_points)
+
+# # Example: Print the two nearest points for a specific day
+# # 2023-04-18
+# day = '2023-04-19'
+# # for points in day_two_nearest[day]:
+# #     # print posittion
+# #     print(points)
+# #     # print time (search in orginal df)
+# #     print(df[(df['X'] == points[0]) & (df['Y'] == points[1]) & (df['Z'] == points[2])]['Timestamp'].values[0])
+# print(day_two_nearest[day])
+
+
+def find_two_nearest_points_with_time_diff(day_max_chunk_with_points, df):
     day_two_nearest = {}
     for day, points in day_max_chunk_with_points.items():
         if len(points) < 2:
@@ -72,6 +106,7 @@ def find_two_nearest_points(day_max_chunk_with_points):
             continue
         min_distance = float('inf')
         nearest_pair = []
+        time_diff = None
         # Iterate through points to find the two closest
         for i in range(len(points) - 1):
             p1 = points[i]
@@ -81,14 +116,20 @@ def find_two_nearest_points(day_max_chunk_with_points):
             if distance < min_distance:
                 min_distance = distance
                 nearest_pair = [p1, p2]
-        day_two_nearest[day] = nearest_pair
+                # Get timestamps for the points
+                time1 = pd.to_datetime(
+                    df[(df['X'] == p1[0]) & (df['Y'] == p1[1]) & (df['Z'] == p1[2])]['Timestamp'].values[0]
+                )
+                time2 = pd.to_datetime(
+                    df[(df['X'] == p2[0]) & (df['Y'] == p2[1]) & (df['Z'] == p2[2])]['Timestamp'].values[0]
+                )
+                time_diff = abs((time2 - time1).total_seconds())
+        day_two_nearest[day] = {"points": nearest_pair, "time_difference": time_diff}
     return day_two_nearest
 
-# Test the function on the example dataset
-day_two_nearest = find_two_nearest_points(day_max_chunk_with_points)
 
 # Example: Print the two nearest points for a specific day
 # 2023-04-18
-day = '2023-04-19'
-for points in day_two_nearest[day]:
-    print(points)
+day = '2023-05-01'
+day_two_nearest = find_two_nearest_points_with_time_diff(day_max_chunk_with_points, df)
+print(day_two_nearest[day])
