@@ -1,6 +1,13 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
+file_path = 'gmat_gps.gmd'
+
+gmat_reference_date = datetime(1941, 1, 5, 12)  # 05 Jan 1941 12:00:00
+mjd_offset = 2430000.0
+
+
+
 # Reloading data
 columns = ['GMAT MJD', 'MeasurementType', 'SatelliteID', 'AdditionalID', 'X', 'Y', 'Z']
 df = pd.read_csv(file_path, sep='\s+', names=columns)
