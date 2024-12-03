@@ -200,7 +200,7 @@ def plot_partial_ECEF_coordinates_with_filtered_GPS(ecef_coords, gps_data):
     ax.set_xlabel("X (km)")
     ax.set_ylabel("Y (km)")
     ax.set_zlabel("Z (km)")
-    ax.set_title("Filtered Partial Earth (1/8 Sphere) with Satellite and GPS Data")
+    ax.set_title("Filtered Partial Earth with Satellite and GPS Data")
     plt.legend()
     plt.show()
 
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     mean_ecentricity = 0.0013769 
     initial_mean_anomaly = 0 
     semi_major_axis = (mean_motion**(-2) * mu)**(1/3) 
-    time = np.arange(0, 9*86400, 60) # 1 day in seconds
+    time = np.arange(0, 86400, 60) # 1 day in seconds
     inclination = np.radians(97.4085)
     raan = np.radians(4.4766)
     arg_periapsis = np.radians(207.9913)

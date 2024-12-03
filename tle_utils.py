@@ -55,7 +55,7 @@ def process_tle(tle_path):
 
         # Extract orbital parameters from Line 2
         inclination = float(line2[8:16].strip())  # Inclination (degrees)
-        eccentricity = float(line2[26:33].strip()) / 100000  # Eccentricity (no decimal point)
+        eccentricity = float(line2[26:33].strip()) / 1000000  # Eccentricity (no decimal point)
         raan_value = float(line2[18:25].strip())  # RAAN (Right Ascension of Ascending Node)
         apogee = float(line2[34:42].strip())  # Argument of Perigee
         mean_anomaly = float(line2[44:51].strip())  # Mean Anomaly
