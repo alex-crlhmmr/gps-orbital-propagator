@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pandas as pd
+import numpy as np
 
 # File path and column names
 file_path = "gmat_gps.gmd"  # Replace with your actual file path
@@ -133,3 +134,153 @@ def find_two_nearest_points_with_time_diff(day_max_chunk_with_points, df):
 day = '2023-05-01'
 day_two_nearest = find_two_nearest_points_with_time_diff(day_max_chunk_with_points, df)
 print(day_two_nearest[day])
+
+
+
+
+
+
+# r = day_two_nearest[day]['points'][1]
+# v = (np.asarray(day_two_nearest[day]['points'][1])-np.asarray(day_two_nearest[day]['points'][0]))/day_two_nearest[day]['time_difference']
+
+
+# def keplerian_elements(r, v, mu=398600.4418):  # mu for Earth in km^3/s^2
+#     h = np.cross(r, v)
+#     h_norm = np.linalg.norm(h)
+#     e = np.cross(v, h) / mu - r / np.linalg.norm(r)
+#     e_norm = np.linalg.norm(e)
+#     a = 1 / (2 / np.linalg.norm(r) - np.linalg.norm(v)**2 / mu)
+#     i = np.arccos(h[2] / h_norm)
+#     n = np.cross([0, 0, 1], h)
+#     n_norm = np.linalg.norm(n)
+#     Omega = np.arccos(n[0] / n_norm)
+#     if n[1] < 0:
+#         Omega = 2 * np.pi - Omega
+#     omega = np.arccos(np.dot(n, e) / (n_norm * e_norm))
+#     if e[2] < 0:
+#         omega = 2 * np.pi - omega
+#     nu = np.arccos(np.dot(e, r) / (e_norm * np.linalg.norm(r)))
+#     if np.dot(r, v) < 0:
+#         nu = 2 * np.pi - nu
+#     return a, e_norm, np.degrees(i), np.degrees(Omega), np.degrees(omega), np.degrees(nu)
+
+# # Itersate over all days & store the keplerian elements in a dictionary
+# keplerian_elements_dict = {}
+# for day, points in day_two_nearest.items():
+#     r = np.asarray(points['points'][1])
+#     v = (np.asarray(points['points'][1]) - np.asarray(points['points'][0])) / points['time_difference']
+#     keplerian_elements_dict[day] = keplerian_elements(r, v)
+
+
+# import numpy as np
+
+# def compute_keplerian_elements(day_two_nearest_with_time, mu=398600.4418):  # mu for Earth in km^3/s^2
+#     def keplerian_elements(r, v, mu):
+#         h = np.cross(r, v)
+#         h_norm = np.linalg.norm(h)
+#         e = np.cross(v, h) / mu - r / np.linalg.norm(r)
+#         e_norm = np.linalg.norm(e)
+#         a = 1 / (2 / np.linalg.norm(r) - np.linalg.norm(v) ** 2 / mu)
+#         i = np.arccos(h[2] / h_norm)
+#         n = np.cross([0, 0, 1], h)
+#         n_norm = np.linalg.norm(n)
+#         Omega = np.arccos(n[0] / n_norm)
+#         if n[1] < 0:
+#             Omega = 2 * np.pi - Omega
+#         omega = np.arccos(np.dot(n, e) / (n_norm * e_norm))
+#         if e[2] < 0:
+#             omega = 2 * np.pi - omega
+#         nu = np.arccos(np.dot(e, r) / (e_norm * np.linalg.norm(r)))
+#         if np.dot(r, v) < 0:
+#             nu = 2 * np.pi - nu
+#         return {
+#             "semi_major_axis": a,
+#             "eccentricity": e_norm,
+#             "inclination": np.degrees(i),
+#             "raan": np.degrees(Omega),
+#             "arg_periapsis": np.degrees(omega),
+#             "true_anomaly": np.degrees(nu)
+#         }
+
+#     keplerian_elements_dict = {}
+#     for day, info in day_two_nearest_with_time.items():
+#         if 'points' in info and 'time_difference' in info:
+#             p0 = np.asarray(info['points'][0])
+#             p1 = np.asarray(info['points'][1])
+#             time_diff = info['time_difference']
+#             # Position vector (r) and velocity vector (v)
+#             r = p1
+#             v = (p1 - p0) / time_diff
+#             # Compute Keplerian elements
+#             keplerian_elements_dict[day] = keplerian_elements(r, v, mu)
+
+#     return keplerian_elements_dict
+
+
+# # Example: Use the provided day_two_nearest_with_time dictionary for testing
+# keplerian_elements_dict = compute_keplerian_elements(day_two_nearest)
+
+# # Output the results
+# print("Keplerian Elements for each day:")
+# for day, elements in keplerian_elements_dict.items():
+#     print(f"{day}: {elements}")
+
+
+# # delete 2023-04-20 and 2023-04-21 ffrom keplerian_elements_dict
+
+# # Plot the keplerian elements each day
+# import matplotlib.pyplot as plt
+
+# # Extract the Keplerian elements for plotting
+# days = list(keplerian_elements_dict.keys())
+# semi_major_axes = [elements["semi_major_axis"] for elements in keplerian_elements_dict.values()]
+# eccentricities = [elements["eccentricity"] for elements in keplerian_elements_dict.values()]
+# inclinations = [elements["inclination"] for elements in keplerian_elements_dict.values()]
+# raans = [elements["raan"] for elements in keplerian_elements_dict.values()]
+# arg_periapses = [elements["arg_periapsis"] for elements in keplerian_elements_dict.values()]
+# true_anomalies = [elements["true_anomaly"] for elements in keplerian_elements_dict.values()]
+
+# # Convert days to indices for plotting
+# day_indices = range(len(days))
+
+# # Plot the Keplerian elements over time
+# plt.figure(figsize=(12, 8))
+
+# plt.subplot(3, 2, 1)
+# plt.plot(day_indices, semi_major_axes, marker='o')
+# plt.title("Semi-Major Axis vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("Semi-Major Axis (km)")
+
+# plt.subplot(3, 2, 2)
+# plt.plot(day_indices, eccentricities, marker='o')
+# plt.title("Eccentricity vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("Eccentricity")
+
+# plt.subplot(3, 2, 3)
+# plt.plot(day_indices, inclinations, marker='o')
+# plt.title("Inclination vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("Inclination (degrees)")
+
+# plt.subplot(3, 2, 4)
+# plt.plot(day_indices, raans, marker='o')
+# plt.title("Right Ascension of Ascending Node vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("RAAN (degrees)")
+
+# plt.subplot(3, 2, 5)
+# plt.plot(day_indices, arg_periapses, marker='o')
+# plt.title("Argument of Periapsis vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("Argument of Periapsis (degrees)")
+
+# plt.subplot(3, 2, 6)
+# plt.plot(day_indices, true_anomalies, marker='o')
+# plt.title("True Anomaly vs. Time")
+# plt.xlabel("Days")
+# plt.ylabel("True Anomaly (degrees)")
+
+# plt.tight_layout()
+# plt.show()
