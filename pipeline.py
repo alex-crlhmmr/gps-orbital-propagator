@@ -1,65 +1,65 @@
-import pandas as pd
 from datetime import datetime, timedelta
+import pandas as pd
 
-file_path = 'gmat_gps.gmd'
+# File path and column names
+file_path = "gmat_gps.gmd"  # Replace with your actual file path
+columns = ['Timestamp', 'MeasurementType', 'SatelliteID', 'AdditionalID', 'X', 'Y', 'Z']
+df = pd.read_csv(file_path, sep=r'\s+', names=columns)
 
-gmat_reference_date = datetime(1941, 1, 5, 12)  # 05 Jan 1941 12:00:00
+# Define GMAT MJD to DateTime conversion function
 mjd_offset = 2430000.0
-
-
-
-# Reloading data
-columns = ['GMAT MJD', 'MeasurementType', 'SatelliteID', 'AdditionalID', 'X', 'Y', 'Z']
-df = pd.read_csv(file_path, sep='\s+', names=columns)
-
-# Step 1: Convert GMAT MJD to Gregorian DateTime
 def gmat_mjd_to_datetime(gmat_mjd):
     jd = gmat_mjd + mjd_offset  # Convert GMAT MJD to Julian Date
     days_since_ref = jd - 2400000.5  # Days since 17 Nov 1858
     datetime_val = datetime(1858, 11, 17) + timedelta(days=days_since_ref)
     return datetime_val
 
-df['Timestamp'] = df['GMAT MJD'].apply(gmat_mjd_to_datetime)
+# Convert and replace the 'Timestamp' column directly
+df['Timestamp'] = df['Timestamp'].apply(gmat_mjd_to_datetime)
 
-# Step 2: Create a dictionary of dictionaries with hierarchical grouping
-hierarchical_dict = {}
+# Add a 'Day' column to group by day
+df['Day'] = df['Timestamp'].dt.date  # Extract just the date part
 
-for _, row in df.iterrows():
-    timestamp = row['Timestamp']
-    day = timestamp.date()  # Extract the date
-    time_in_seconds = (timestamp - datetime.combine(day, datetime.min.time())).total_seconds()
-    time_bin = int(time_in_seconds // 3600)  # Divide into 1-hour bins
+# Define a helper function to assign chunk labels
+def assign_hour_chunk(timestamp):
+    start_of_day = datetime.combine(timestamp.date(), datetime.min.time())
+    seconds_since_start = (timestamp - start_of_day).total_seconds()
+    n = 1.5 # chunk size in hours
+    chunk_label = int(seconds_since_start // (3600*n))  # Compute chunk label (3600*n = n hour)
+    return chunk_label
 
-    # Initialize the dictionary structure if needed
-    if day not in hierarchical_dict:
-        hierarchical_dict[day] = {}
+# Add a 'Chunk' column to group by chunks of 3600 seconds within each day
+df['Chunk'] = df['Timestamp'].apply(assign_hour_chunk)
 
-    if time_bin not in hierarchical_dict[day]:
-        hierarchical_dict[day][time_bin] = []
+#print(df)
 
-    # Append the row data to the appropriate time bin
-    hierarchical_dict[day][time_bin].append({
-        'Timestamp': timestamp,
-        'MeasurementType': row['MeasurementType'],
-        'SatelliteID': row['SatelliteID'],
-        'AdditionalID': row['AdditionalID'],
-        'X': row['X'] * 1000,  # Convert km to meters
-        'Y': row['Y'] * 1000,
-        'Z': row['Z'] * 1000
-    })
-
-# Summarize the structure into a readable format
-summary = [
-    {
-        "Day": day,
-        "Time Bin (Hours)": time_bin,
-        "Data Points": len(data)
-    }
-    for day, time_bins in hierarchical_dict.items()
-    for time_bin, data in time_bins.items()
-]
-
-summary_df = pd.DataFrame(summary)
+# out news gmd file
+df.to_csv('gmat_gps_utc.gmd', sep=' ', index=False, header=False)
 
 
-print(summary_df)
+
+# Define the function to find the chunk with the most points for each day
+def find_day_max_chunk_with_points(df):
+    results = {}
+    for day, day_data in df.groupby('Day'):
+        # Group the data by chunks for the current day
+        chunk_counts = day_data.groupby('Chunk').size()
+        # Identify the chunk with the most points
+        max_chunk = chunk_counts.idxmax()  # Chunk label with the most points
+        max_chunk_data = day_data[day_data['Chunk'] == max_chunk]
+        # Collect all X, Y, Z values from the chunk with the most points
+        xyz_list = max_chunk_data[['X', 'Y', 'Z']].values.tolist()
+        # Store the result
+        results[str(day)] = xyz_list
+    return results
+
+# Call the function and store the results
+result = find_day_max_chunk_with_points(df)
+
+
+# 2023-04-18
+day = '2023-04-19'
+for points in result[day]:
+    print(points)
+
+
