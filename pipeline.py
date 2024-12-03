@@ -31,11 +31,9 @@ def assign_hour_chunk(timestamp):
 # Add a 'Chunk' column to group by chunks of 3600 seconds within each day
 df['Chunk'] = df['Timestamp'].apply(assign_hour_chunk)
 
-#print(df)
 
-# out news gmd file
+# Save the processed data to a new file
 df.to_csv('gmat_gps_utc.gmd', sep=' ', index=False, header=False)
-
 
 
 # Define the function to find the chunk with the most points for each day
@@ -54,12 +52,43 @@ def find_day_max_chunk_with_points(df):
     return results
 
 # Call the function and store the results
-result = find_day_max_chunk_with_points(df)
+day_max_chunk_with_points = find_day_max_chunk_with_points(df)
 
 
+# Example: Print the points with the most data for a specific day
+# 2023-04-18
+# day = '2023-04-19'
+# for points in day_max_chunk_with_points[day]:
+#     print(points)
+
+
+
+# Final function to find the two nearest points based on consecutive proximity
+def find_two_nearest_points(day_max_chunk_with_points):
+    day_two_nearest = {}
+    for day, points in day_max_chunk_with_points.items():
+        if len(points) < 2:
+            # If fewer than 2 points, skip the day
+            continue
+        min_distance = float('inf')
+        nearest_pair = []
+        # Iterate through points to find the two closest
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i + 1]
+            # Compute Euclidean distance
+            distance = sum((a - b) ** 2 for a, b in zip(p1, p2)) ** 0.5
+            if distance < min_distance:
+                min_distance = distance
+                nearest_pair = [p1, p2]
+        day_two_nearest[day] = nearest_pair
+    return day_two_nearest
+
+# Test the function on the example dataset
+day_two_nearest = find_two_nearest_points(day_max_chunk_with_points)
+
+# Example: Print the two nearest points for a specific day
 # 2023-04-18
 day = '2023-04-19'
-for points in result[day]:
+for points in day_two_nearest[day]:
     print(points)
-
-
